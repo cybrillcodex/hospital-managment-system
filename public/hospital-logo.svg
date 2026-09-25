@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Hospital logo">
+  <circle cx="60" cy="60" r="56" fill="#0b1d3a" stroke="#edbd3f" stroke-width="6"/>
+  <path d="M48 23h24v25h25v24H72v25H48V72H23V48h25z" fill="#edbd3f"/>
+  <path d="M54 30h12v24h24v12H66v24H54V66H30V54h24z" fill="#ffffff"/>
+</svg>

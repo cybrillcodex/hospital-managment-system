@@ -43,35 +43,46 @@ class ReceptionistController extends Controller
             'doctors_available' => $doctors->where('status', 'Available')->count(),
         ];
 
-        return view('receptionist', compact('doctors', 'patients', 'todaysAppointments', 'todaysTokens', 'todaysCash', 'kpis'));
+        $printToken = session('print_token_id') ? Token::with(['patient', 'doctor'])->find(session('print_token_id')) : null;
+
+        return view('receptionist', compact('doctors', 'patients', 'todaysAppointments', 'todaysTokens', 'todaysCash', 'kpis', 'printToken'));
     }
 
     public function appointmentsPage()
     {
-        $appointments = Appointment::with(['patient', 'doctor'])->orderByDesc('appointment_date')->orderBy('appointment_time')->limit(100)->get();
+        $appointments = Appointment::with(['patient', 'doctor', 'token'])->orderByDesc('appointment_date')->orderBy('appointment_time')->limit(100)->get();
         $patients = Patient::orderBy('name')->get();
         $doctors = Doctor::orderBy('name')->get();
 
-        return view('appointments', compact('appointments', 'patients', 'doctors'));
+        $printToken = session('print_token_id') ? Token::with(['patient', 'doctor'])->find(session('print_token_id')) : null;
+
+        return view('appointments', compact('appointments', 'patients', 'doctors', 'printToken'));
     }
 
     public function appointmentsLive()
     {
-        return response()->json(Appointment::with(['patient', 'doctor'])->orderByDesc('appointment_date')->orderBy('appointment_time')->limit(100)->get());
+        return response()->json(Appointment::with(['patient', 'doctor', 'token'])->orderByDesc('appointment_date')->orderBy('appointment_time')->limit(100)->get());
     }
 
     public function updateAppointmentStatus(Request $request, Appointment $appointment)
     {
-        $appointment->update($request->validate(['status' => ['required', 'in:Confirmed,Waiting,Cancelled']]));
+        $status = $request->validate(['status' => ['required', 'in:Confirmed,Waiting,Cancelled']]);
 
-        return back()->with('status', "Appointment status updated for {$appointment->patient->name}.");
+        DB::transaction(function () use ($appointment, $status) {
+            $appointment->update($status);
+        });
+
+        $appointment->load('patient', 'token');
+
+        return redirect()->route('receptionist.appointments.token', $appointment)
+            ->with('status', "Appointment saved for {$appointment->patient->name}.");
     }
 
     public function storeAppointment(Request $request)
     {
         $data = $request->validate([
             'patient_id' => ['nullable', 'exists:patients,id'],
-            'patient_name' => ['required_without:patient_id', 'string', 'max:255'],
+            'patient_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'gender' => ['nullable', 'in:Male,Female,Other'],
             'age' => ['nullable', 'integer', 'min:0', 'max:130'],
@@ -84,21 +95,64 @@ class ReceptionistController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $patient = $this->resolvePatient($data);
+        if (empty($data['patient_id']) && empty($data['patient_name'])) {
+            return back()->withErrors(['patient_name' => 'Select an existing patient or enter a new patient name.'])->withInput();
+        }
 
-        Appointment::create([
-            'patient_id' => $patient->id,
-            'doctor_id' => $data['doctor_id'],
-            'appointment_date' => $data['appointment_date'],
-            'appointment_time' => $data['appointment_time'],
-            'department' => $data['department'] ?? null,
-            'type' => $data['type'] ?? null,
-            'reason' => $data['reason'] ?? null,
-            'notes' => $data['notes'] ?? null,
-            'status' => 'Confirmed',
+        $appointment = DB::transaction(function () use ($data) {
+            $patient = $this->resolvePatient($data);
+            $appointment = Appointment::create([
+                'patient_id' => $patient->id,
+                'doctor_id' => $data['doctor_id'],
+                'appointment_date' => $data['appointment_date'],
+                'appointment_time' => $data['appointment_time'],
+                'department' => $data['department'] ?? null,
+                'type' => $data['type'] ?? null,
+                'reason' => $data['reason'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'status' => 'Confirmed',
+            ]);
+
+            return $appointment->load('patient', 'token');
+        });
+
+        return redirect()->route('receptionist.appointments.token', $appointment)
+            ->with('status', "Appointment booked for {$appointment->patient->name}. Generate a token when the patient is ready.");
+    }
+
+    public function appointmentToken(Appointment $appointment)
+    {
+        $appointment->load(['patient', 'doctor', 'token']);
+
+        return view('appointment-token', compact('appointment'));
+    }
+
+    public function generateAppointmentToken(Appointment $appointment)
+    {
+        $token = DB::transaction(fn () => $this->ensureAppointmentToken($appointment->load('patient', 'doctor')));
+
+        return redirect()->route('receptionist.appointments.index')
+            ->with('status', "Token {$token->token_number} generated for {$appointment->patient->name}.")
+            ->with('print_token_id', $token->id);
+    }
+
+    private function ensureAppointmentToken(Appointment $appointment): Token
+    {
+        if ($appointment->token) {
+            return $appointment->token;
+        }
+
+        $tokenDate = $appointment->appointment_date->toDateString();
+        $sequence = Token::whereDate('token_date', $tokenDate)->lockForUpdate()->count() + 1;
+
+        return Token::create([
+            'token_number' => 'T-' . date('Ymd', strtotime($tokenDate)) . '-' . str_pad((string) $sequence, 3, '0', STR_PAD_LEFT),
+            'appointment_id' => $appointment->id,
+            'patient_id' => $appointment->patient_id,
+            'doctor_id' => $appointment->doctor_id,
+            'token_date' => $tokenDate,
+            'status' => 'Waiting',
         ]);
-
-        return back()->with('status', "Appointment booked for {$patient->name}.");
     }
 
     public function storeToken(Request $request)
@@ -126,7 +180,8 @@ class ReceptionistController extends Controller
             'status' => 'Waiting',
         ]);
 
-        return back()->with('status', "Token {$token->token_number} generated for {$patient->name}.");
+        return back()->with('status', "Token {$token->token_number} generated for {$patient->name}.")
+            ->with('print_token_id', $token->id);
     }
 
     public function storeCash(Request $request)

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ReceptionistController;
+use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\LaboratoryController;
 use App\Http\Controllers\PharmacyController;
 use App\Http\Controllers\ReportController;
@@ -13,7 +14,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('dashboard', ['dashboardStats' => dashboardStats()]);
+    return view('dashboard', [
+        'dashboardStats' => dashboardStats(),
+        'patients' => Patient::orderBy('name')->get(),
+        'doctors' => Doctor::orderBy('name')->get(),
+    ]);
 });
 
 Route::get('/dashboard/stats', function () {
@@ -23,6 +28,7 @@ Route::get('/dashboard/stats', function () {
 Route::get('/staff', [StaffController::class, 'index'])->name('staff.index');
 Route::post('/staff', [StaffController::class, 'store'])->name('staff.store');
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+Route::post('/doctors', [DoctorController::class, 'store'])->name('doctors.store');
 
 Route::get('/pharmacy', [PharmacyController::class, 'index'])->name('pharmacy.index');
 Route::get('/prescriptions', [PharmacyController::class, 'prescriptionsPage'])->name('prescriptions.index');
@@ -90,6 +96,8 @@ Route::prefix('receptionist')->name('receptionist.')->group(function () {
     Route::get('/appointments', [ReceptionistController::class, 'appointmentsPage'])->name('appointments.index');
     Route::get('/appointments/live', [ReceptionistController::class, 'appointmentsLive'])->name('appointments.live');
     Route::post('/appointments', [ReceptionistController::class, 'storeAppointment'])->name('appointments.store');
+    Route::get('/appointments/{appointment}/token', [ReceptionistController::class, 'appointmentToken'])->name('appointments.token');
+    Route::post('/appointments/{appointment}/token', [ReceptionistController::class, 'generateAppointmentToken'])->name('appointments.token.generate');
     Route::patch('/appointments/{appointment}/status', [ReceptionistController::class, 'updateAppointmentStatus'])->name('appointments.status');
     Route::post('/tokens', [ReceptionistController::class, 'storeToken'])->name('tokens.store');
     Route::post('/cash', [ReceptionistController::class, 'storeCash'])->name('cash.store');

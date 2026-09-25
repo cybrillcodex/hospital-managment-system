@@ -68,6 +68,7 @@
 				{{ $errors->first() }}
 			</div>
 		@endif
+		@include('partials.token-print-card')
 
 		<div class="kpis">
 			<div class="kpi"><small>Today's Appointments</small><strong>{{ $kpis['appointments_today'] }}</strong></div>

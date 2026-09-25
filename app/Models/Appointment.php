@@ -21,4 +21,9 @@ class Appointment extends Model
     {
         return $this->belongsTo(Doctor::class);
     }
+
+    public function token()
+    {
+        return $this->hasOne(Token::class);
+    }
 }
