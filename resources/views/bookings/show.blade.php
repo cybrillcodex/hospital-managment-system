@@ -3,6 +3,21 @@
 @section('title', 'Booking #'.$booking->id)
 @section('subtitle', 'Bookings · Booking #'.$booking->id)
 @section('actions')
+    <div class="booking-page-tools">
+        <div class="booking-search" aria-hidden="true">
+            <x-icon name="search" size="sm" />
+            <span>Search bookings, guests, rooms...</span>
+        </div>
+        <span class="booking-notification" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+            </svg>
+            <span></span>
+        </span>
+        <span class="booking-user-avatar">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 2)) }}</span>
+        <span class="booking-user-name">{{ auth()->user()->name }}</span>
+        <x-icon name="chevron" size="sm" class="booking-user-chevron" />
+    </div>
 @endsection
 
 @section('content')
@@ -43,15 +58,27 @@
             ->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))
             ->take(2)
             ->implode('');
-        $documentUrls = collect([
-            $booking->frontUrl(),
-            $booking->backUrl(),
-        ])->filter()->values();
+        $guestDocuments = [
+            ['label' => 'ID card front', 'url' => $booking->frontUrl()],
+            ['label' => 'ID card back', 'url' => $booking->backUrl()],
+        ];
+        $companionDocuments = collect();
         foreach ($booking->companions as $companion) {
-            $documentUrls->push($companion->frontUrl());
-            $documentUrls->push($companion->backUrl());
+            if ($companion->frontUrl()) {
+                $companionDocuments->push([
+                    'label' => $companion->name.' — ID card front',
+                    'url' => $companion->frontUrl(),
+                ]);
+            }
+            if ($companion->backUrl()) {
+                $companionDocuments->push([
+                    'label' => $companion->name.' — ID card back',
+                    'url' => $companion->backUrl(),
+                ]);
+            }
         }
-        $documentUrls = $documentUrls->filter()->values();
+        $documentUrls = collect($guestDocuments)->pluck('url')->filter()
+            ->merge($companionDocuments->pluck('url'))->values();
         $paymentMethodLabel = function (?string $method): string {
             return match ($method) {
                 'cash' => 'Cash',
@@ -546,6 +573,2092 @@
             .bk-btn { width: 100%; }
             .bk-card-wrap { padding: 1rem; }
         }
+
+        body.booking-detail-body {
+            background: #f4f5f7;
+            color: #252a34;
+            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+        }
+
+        body.booking-detail-body .app-bottom-nav {
+            display: none;
+        }
+
+        body.booking-detail-body .app-header {
+            min-height: 3.5rem;
+            padding: 0.45rem 1rem;
+            background: #fff;
+            border-color: #e8ebf0;
+            box-shadow: 0 1px 2px rgba(20, 30, 50, 0.03);
+        }
+
+        body.booking-detail-body .app-header > div:first-child {
+            gap: 0.55rem;
+        }
+
+        body.booking-detail-body .app-header p {
+            color: #78808c;
+            font-size: 0.72rem;
+        }
+
+        body.booking-detail-body .app-header-actions {
+            max-width: none;
+            gap: 0.7rem;
+        }
+
+        body.booking-detail-body .app-main {
+            min-height: calc(100vh - 3.5rem);
+            padding: 0.75rem 0.85rem 1rem;
+            background: #f4f5f7;
+        }
+
+        @media (min-width: 768px) {
+            body.booking-detail-body .app-sidebar {
+                translate: 0 0 !important;
+            }
+
+            body.booking-detail-body .app-shell {
+                padding-left: 17.5rem !important;
+            }
+        }
+
+        .booking-page-tools {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            color: #69717d;
+            font-size: 0.67rem;
+        }
+
+        .booking-search {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            width: clamp(8rem, 22vw, 15rem);
+            padding: 0.4rem 0.55rem;
+            border: 1px solid #e7e9ef;
+            border-radius: 0.42rem;
+            background: #f8f9fb;
+            color: #969daa;
+            white-space: nowrap;
+        }
+
+        .booking-search svg {
+            width: 0.8rem;
+            height: 0.8rem;
+        }
+
+        .booking-notification {
+            position: relative;
+            display: grid;
+            width: 1.7rem;
+            height: 1.7rem;
+            place-items: center;
+            color: #59616d;
+        }
+
+        .booking-notification svg {
+            width: 0.95rem;
+            height: 0.95rem;
+        }
+
+        .booking-notification span {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            width: 0.32rem;
+            height: 0.32rem;
+            border: 1px solid #fff;
+            border-radius: 50%;
+            background: #d91f53;
+        }
+
+        .booking-user-avatar {
+            display: grid;
+            width: 1.45rem;
+            height: 1.45rem;
+            place-items: center;
+            border-radius: 50%;
+            background: #ffe4eb;
+            color: #b42352;
+            font-size: 0.58rem;
+            font-weight: 700;
+        }
+
+        .booking-user-name {
+            color: #4b5563;
+            font-size: 0.66rem;
+            white-space: nowrap;
+        }
+
+        .booking-user-chevron {
+            width: 0.75rem;
+            height: 0.75rem;
+        }
+
+        .bk-page {
+            gap: 0.55rem;
+            animation: none;
+        }
+
+        .bk-card,
+        .bk-hero,
+        .bk-kpi {
+            border: 1px solid #edf0f4;
+            border-radius: 0.6rem;
+            background: #fff;
+            box-shadow: 0 2px 7px rgba(30, 41, 59, 0.035);
+        }
+
+        .bk-card:hover,
+        .bk-kpi:hover {
+            transform: none;
+            border-color: #edf0f4;
+            box-shadow: 0 2px 7px rgba(30, 41, 59, 0.035);
+        }
+
+        .bk-hero {
+            padding: 0.65rem 0.75rem;
+            border-color: #f2e6ea;
+            background: linear-gradient(105deg, #fff 0%, #fff7f9 100%);
+        }
+
+        .bk-hero::after {
+            display: none;
+        }
+
+        .bk-hero-mark {
+            width: 1.55rem;
+            height: 1.55rem;
+            background: #ffe5eb;
+            color: #c02f56;
+            box-shadow: none;
+        }
+
+        .bk-kicker {
+            color: #313743;
+            font-size: 0.57rem;
+            letter-spacing: 0.03em;
+        }
+
+        .bk-guest-name {
+            margin-top: 0.18rem;
+            color: #252a34;
+            font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+            font-size: clamp(1rem, 1.55vw, 1.35rem);
+            font-weight: 700;
+            letter-spacing: -0.035em;
+            line-height: 1.1;
+        }
+
+        .bk-hero-meta {
+            margin-top: 0.35rem;
+            gap: 0.3rem 0.75rem;
+            color: #6b7280;
+            font-size: 0.59rem;
+        }
+
+        .bk-hero-meta span {
+            gap: 0.22rem;
+        }
+
+        .bk-hero-meta svg {
+            width: 0.72rem;
+            height: 0.72rem;
+            color: #69717d;
+        }
+
+        .bk-hero-actions {
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0;
+        }
+
+        .bk-action-stack {
+            flex-direction: row;
+            gap: 0.35rem;
+        }
+
+        .bk-btn {
+            min-height: 1.75rem;
+            padding: 0.35rem 0.55rem;
+            gap: 0.25rem;
+            border: 1px solid #e4e7ec;
+            border-radius: 0.38rem;
+            background: #fff;
+            color: #353b46;
+            font-size: 0.61rem;
+            font-weight: 600;
+            box-shadow: none;
+        }
+
+        .bk-btn svg {
+            width: 0.75rem;
+            height: 0.75rem;
+        }
+
+        .bk-btn-primary {
+            border-color: #b21d4b;
+            background: #b21d4b;
+            color: #fff;
+        }
+
+        .bk-btn-primary:hover {
+            background: #9f1239;
+        }
+
+        .booking-checked-out-button:disabled {
+            cursor: default;
+            opacity: 1;
+        }
+
+        .bk-btn-cancel {
+            border-color: #f2c8d2;
+            color: #c02f56;
+        }
+
+        .bk-badge {
+            padding: 0.18rem 0.4rem;
+            font-size: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .bk-kpi-grid {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 0.45rem;
+        }
+
+        .bk-kpi {
+            min-height: 4.6rem;
+            padding: 0.5rem 0.55rem;
+            animation: none;
+        }
+
+        .bk-kpi.is-overdue {
+            border-color: #f8e7c3;
+            background: #fffaf0;
+        }
+
+        .bk-kpi.is-total {
+            border-color: #f7e0e6;
+            background: #fff7f9;
+        }
+
+        .bk-kpi-title {
+            gap: 0.3rem;
+            color: #57606d;
+            font-size: clamp(0.48rem, 0.65vw, 0.63rem);
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .bk-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 0.35rem;
+            box-shadow: none;
+        }
+
+        .bk-icon svg {
+            width: 0.7rem;
+            height: 0.7rem;
+        }
+
+        .bk-kpi .stat-num {
+            margin-top: 0.35rem;
+            color: #252a34;
+            font-size: clamp(0.67rem, 1vw, 0.95rem);
+            letter-spacing: -0.025em;
+            line-height: 1.15;
+        }
+
+        .bk-kpi p {
+            margin-top: 0.15rem;
+            font-size: 0.53rem;
+            line-height: 1.25;
+        }
+
+        .bk-progress-row {
+            margin-top: 0.32rem;
+            gap: 0.3rem;
+        }
+
+        .bk-progress {
+            height: 0.24rem;
+        }
+
+        .bk-split {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 0.5rem;
+        }
+
+        .bk-card-wrap {
+            padding: 0.65rem;
+        }
+
+        .bk-page h3 {
+            color: #303641;
+            font-size: 0.68rem;
+            line-height: 1.25;
+        }
+
+        .bk-page .text-xs {
+            font-size: 0.55rem;
+        }
+
+        .bk-page .text-sm {
+            font-size: 0.62rem;
+        }
+
+        .bk-page .bk-meta {
+            color: #7b8390;
+        }
+
+        .bk-page .mt-5 {
+            margin-top: 0.55rem;
+        }
+
+        .bk-page .mt-4 {
+            margin-top: 0.45rem;
+        }
+
+        .bk-page .mt-3 {
+            margin-top: 0.35rem;
+        }
+
+        .bk-page .gap-3 {
+            gap: 0.45rem;
+        }
+
+        .bk-page .gap-4 {
+            gap: 0.55rem;
+        }
+
+        body.booking-detail-body .bk-page [class~="sm:grid-cols-2"] {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        body.booking-detail-body .bk-page img:not(.booking-room-photo) {
+            height: 4.25rem;
+            border-radius: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page .h-28.w-36 {
+            width: 36%;
+            height: 4.5rem;
+            border-radius: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page .booking-room-photo {
+            min-height: 100%;
+        }
+
+        body.booking-detail-body .bk-page .bk-badge-success {
+            background: #eaf8ef;
+            color: #169653;
+        }
+
+        .bk-timeline {
+            padding-left: 1rem;
+        }
+
+        .bk-timeline::before {
+            left: 0.3rem;
+        }
+
+        .bk-dot {
+            left: -0.85rem;
+            width: 0.55rem;
+            height: 0.55rem;
+        }
+
+        .bk-nights {
+            width: 3.7rem;
+            height: 3.7rem;
+            background: #f3f4f6;
+            color: #59616d;
+        }
+
+        .bk-table th {
+            padding: 0.35rem;
+            border-color: #edf0f4;
+            font-size: 0.48rem;
+            letter-spacing: 0.04em;
+        }
+
+        .bk-table td {
+            padding: 0.42rem 0.35rem;
+            border-color: #f1f2f5;
+            font-size: 0.55rem;
+        }
+
+        body.booking-detail-body .pay-ring {
+            width: 5.2rem;
+            height: 5.2rem;
+        }
+
+        .booking-room-photo {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 900px) {
+            .bk-kpi-grid {
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+            }
+
+            .bk-split {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            body.booking-detail-body .app-header {
+                padding-inline: 0.55rem;
+            }
+
+            body.booking-detail-body .app-main {
+                padding: 0.5rem 0.45rem 0.75rem;
+            }
+
+            .booking-search {
+                width: 1.8rem;
+                padding: 0.35rem;
+                overflow: hidden;
+            }
+
+            .booking-search span,
+            .booking-user-name,
+            .booking-user-chevron {
+                display: none;
+            }
+
+            .bk-kpi-grid {
+                gap: 0.25rem;
+            }
+
+            .bk-kpi {
+                min-height: 3.7rem;
+                padding: 0.35rem;
+            }
+
+            .bk-kpi-title {
+                gap: 0.2rem;
+            }
+
+            .bk-icon {
+                width: 1rem;
+                height: 1rem;
+            }
+
+            .bk-split {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 0.35rem;
+            }
+
+            .bk-card-wrap {
+                padding: 0.45rem;
+            }
+
+            .bk-hero {
+                padding: 0.5rem;
+            }
+
+            .bk-hero-actions {
+                gap: 0.2rem;
+            }
+
+            .bk-btn {
+                min-height: 1.55rem;
+                padding: 0.25rem 0.35rem;
+                font-size: 0.53rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .bk-kpi-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .bk-split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        body.booking-detail-body .app-header {
+            height: 3.25rem;
+            min-height: 3.25rem;
+            padding: 0.4rem 0.85rem;
+        }
+
+        body.booking-detail-body .app-header > div:first-child {
+            flex: 1;
+            min-width: 0;
+        }
+
+        body.booking-detail-body .app-header > div:first-child > div {
+            min-width: 0;
+        }
+
+        body.booking-detail-body .app-header p {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        body.booking-detail-body .app-header-actions {
+            flex: 0 0 auto;
+        }
+
+        body.booking-detail-body .app-main {
+            min-height: calc(100vh - 3.25rem);
+            padding: 0.65rem 0.65rem 0.8rem;
+        }
+
+        .booking-page-tools {
+            gap: 0.45rem;
+            font-size: 0.7rem;
+        }
+
+        .booking-search {
+            width: clamp(8rem, 25vw, 14rem);
+            height: 1.85rem;
+        }
+
+        .booking-notification {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .bk-page {
+            gap: 0.48rem;
+        }
+
+        .bk-card,
+        .bk-hero,
+        .bk-kpi {
+            border-radius: 0.52rem;
+        }
+
+        .bk-hero {
+            min-height: 4.15rem;
+            padding: 0.5rem 0.62rem;
+        }
+
+        .bk-hero > div:first-child {
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bk-hero > div:first-child > div {
+            min-width: 0;
+        }
+
+        .bk-hero-mark {
+            width: 1.4rem;
+            height: 1.4rem;
+        }
+
+        .bk-kicker {
+            font-size: 0.58rem;
+        }
+
+        .bk-guest-name {
+            margin-top: 0.12rem;
+            font-size: clamp(1rem, 2.35vw, 1.3rem);
+            line-height: 1.12;
+        }
+
+        .bk-hero-meta {
+            margin-top: 0.28rem;
+            gap: 0.2rem 0.62rem;
+            font-size: 0.61rem;
+            line-height: 1.25;
+        }
+
+        .bk-hero-actions {
+            max-width: 48%;
+            gap: 0.28rem;
+        }
+
+        .bk-action-stack {
+            gap: 0.28rem;
+        }
+
+        .bk-hero-actions form {
+            margin: 0;
+        }
+
+        .bk-btn,
+        .bk-hero-actions .bk-btn {
+            width: auto;
+            min-height: 1.7rem;
+            padding: 0.3rem 0.48rem;
+            font-size: 0.62rem;
+            line-height: 1.15;
+        }
+
+        .bk-badge {
+            font-size: 0.54rem;
+            line-height: 1.25;
+        }
+
+        .bk-kpi-grid {
+            gap: 0.38rem;
+        }
+
+        .bk-kpi {
+            display: flex;
+            min-height: 4.7rem;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 0.44rem 0.48rem;
+        }
+
+        .bk-kpi-title {
+            min-height: 1.2rem;
+            gap: 0.28rem;
+            font-size: clamp(0.57rem, 1.05vw, 0.66rem);
+        }
+
+        .bk-icon {
+            width: 1.22rem;
+            height: 1.22rem;
+            border-radius: 0.35rem;
+        }
+
+        .bk-icon svg {
+            width: 0.73rem;
+            height: 0.73rem;
+        }
+
+        .bk-kpi .stat-num {
+            margin-top: 0.32rem;
+            font-size: clamp(0.76rem, 1.45vw, 0.95rem);
+            line-height: 1.15;
+        }
+
+        .bk-kpi p {
+            margin-top: 0.12rem;
+            font-size: clamp(0.52rem, 0.92vw, 0.61rem);
+            line-height: 1.2;
+        }
+
+        .bk-kpi .bk-progress-row {
+            width: 100%;
+            margin-top: auto;
+            padding-top: 0.28rem;
+        }
+
+        .bk-progress {
+            height: 0.23rem;
+        }
+
+        .bk-split {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 0.45rem;
+            align-items: stretch;
+        }
+
+        .bk-card-wrap {
+            min-width: 0;
+            padding: 0.58rem;
+        }
+
+        .bk-card-wrap > .flex.items-start.gap-3,
+        .bk-card-wrap > .flex.items-start.justify-between.gap-3 {
+            min-height: 1.65rem;
+            align-items: center;
+            gap: 0.38rem;
+        }
+
+        .bk-page h3 {
+            color: #303641;
+            font-size: 0.74rem;
+            font-weight: 650;
+            line-height: 1.2;
+        }
+
+        .bk-page .text-xs {
+            font-size: 0.59rem;
+            line-height: 1.3;
+        }
+
+        .bk-page .text-sm {
+            font-size: 0.68rem;
+            line-height: 1.35;
+        }
+
+        .bk-page .bk-meta {
+            color: #77808c;
+        }
+
+        .bk-page .mt-5 {
+            margin-top: 0.55rem;
+        }
+
+        .bk-page .mt-4 {
+            margin-top: 0.45rem;
+        }
+
+        .bk-page .mt-3 {
+            margin-top: 0.35rem;
+        }
+
+        .bk-page .mt-2 {
+            margin-top: 0.25rem;
+        }
+
+        .bk-page .gap-3 {
+            gap: 0.42rem;
+        }
+
+        .bk-page .gap-4 {
+            gap: 0.5rem;
+        }
+
+        .bk-page .space-y-4 > :not(:first-child) {
+            margin-top: 0.45rem;
+        }
+
+        .bk-page .space-y-6 > :not(:first-child) {
+            margin-top: 0.65rem;
+        }
+
+        .bk-page .bk-timeline .font-semibold {
+            font-size: 0.68rem;
+            line-height: 1.25;
+        }
+
+        .bk-page .bk-timeline [class~="text-[11px]"] {
+            font-size: 0.56rem;
+            letter-spacing: 0.08em;
+        }
+
+        .bk-nights {
+            width: 3.75rem;
+            height: 3.75rem;
+        }
+
+        .bk-page .bk-nights .stat-num {
+            font-size: 1.15rem;
+        }
+
+        .bk-page .bk-nights [class~="text-[10px]"] {
+            font-size: 0.52rem;
+            letter-spacing: 0.08em;
+        }
+
+        body.booking-detail-body .bk-page > .bk-stay-payment > .bk-card {
+            min-height: 8.15rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-stay-payment > .bk-card:nth-child(2) > .mt-5 {
+            gap: 0.55rem;
+        }
+
+        body.booking-detail-body .bk-page .pay-ring {
+            width: 5.05rem;
+            height: 5.05rem;
+        }
+
+        body.booking-detail-body .bk-page svg[viewBox="0 0 120 120"] {
+            width: 5.05rem;
+            height: 5.05rem;
+        }
+
+        body.booking-detail-body .bk-page #paid-pct-label {
+            font-size: 1.05rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article {
+            min-height: 15.7rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-5 {
+            gap: 0.5rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-5 .h-12.w-12 {
+            width: 2rem;
+            height: 2rem;
+            font-size: 0.62rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-5 .text-lg {
+            font-size: 0.73rem;
+            line-height: 1.2;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid {
+            gap: 0.22rem;
+            font-size: 0.59rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid > div {
+            gap: 0.3rem;
+            overflow-wrap: anywhere;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid svg {
+            width: 0.72rem;
+            height: 0.72rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 {
+            gap: 0.3rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 > div {
+            padding: 0.3rem 0.2rem;
+            border-radius: 0.4rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 .h-8.w-8 {
+            width: 1.1rem;
+            height: 1.1rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 .stat-num {
+            font-size: 0.77rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child [class~="sm:grid-cols-2"] {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child img:not(.booking-room-photo) {
+            width: 100%;
+            height: 3.2rem;
+            border-radius: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 > article {
+            padding: 0.58rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 > article:first-child {
+            flex: 0 0 auto;
+        }
+
+        .booking-checkout-complete {
+            flex: 1 1 auto;
+        }
+
+        .booking-checkout-facts {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.35rem;
+            margin-top: 0.75rem;
+        }
+
+        .booking-checkout-facts > div {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.2rem;
+            border-radius: 0.45rem;
+            background: #f3fbf6;
+            padding: 0.48rem;
+        }
+
+        .booking-checkout-facts span {
+            color: #77808c;
+            font-size: 0.6rem;
+        }
+
+        .booking-checkout-facts strong {
+            color: #303641;
+            font-size: 0.69rem;
+            font-weight: 600;
+        }
+
+        .booking-checkout-note {
+            margin-top: auto;
+            padding-top: 0.6rem;
+            color: #77808c;
+            font-size: 0.65rem;
+        }
+
+        body.booking-detail-body .bk-page .booking-room-photo {
+            object-position: center;
+        }
+
+        body.booking-detail-body .bk-page .h-28.w-36 {
+            width: 5.55rem;
+            height: 4.2rem;
+            flex: 0 0 5.55rem;
+        }
+
+        body.booking-detail-body .bk-page .text-xl {
+            font-size: 0.82rem;
+            line-height: 1.2;
+        }
+
+        body.booking-detail-body .bk-page .input {
+            min-height: 1.85rem;
+            padding: 0.35rem 0.48rem;
+            border-radius: 0.38rem;
+            font-size: 0.62rem;
+        }
+
+        body.booking-detail-body .bk-page .btn {
+            min-height: 1.8rem;
+            padding: 0.32rem 0.55rem;
+            border-radius: 0.38rem;
+            font-size: 0.62rem;
+        }
+
+        body.booking-detail-body .bk-page .btn svg {
+            width: 0.78rem;
+            height: 0.78rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer .grid-cols-4 {
+            gap: 0.24rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer .grid-cols-4 > div {
+            padding: 0.32rem 0.12rem;
+            border-radius: 0.42rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer .grid-cols-4 .stat-num {
+            font-size: 0.85rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer [class~="text-[10px]"] {
+            font-size: 0.49rem;
+            letter-spacing: 0.04em;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras > article {
+            min-height: 6rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .bk-table {
+            table-layout: fixed;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .bk-table th {
+            padding: 0.28rem 0.22rem;
+            font-size: 0.52rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .bk-table td {
+            padding: 0.34rem 0.22rem;
+            font-size: 0.59rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .bk-table .btn {
+            min-height: 1.5rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .min-h-40 {
+            min-height: 4.7rem;
+            border-radius: 0.45rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras [class~="bg-slate-50/60"] {
+            padding: 0.48rem;
+            border-radius: 0.42rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid {
+            grid-template-columns: minmax(0, 1fr) minmax(10rem, 35%);
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-card-wrap {
+            padding: 0.62rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 > :not(:first-child) {
+            margin-top: 0.34rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 > div {
+            font-size: 0.62rem;
+            line-height: 1.2;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .border-t.pt-3 {
+            padding-top: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > div:last-child {
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.68rem;
+            border-color: #f3dfe5;
+            background: #fff5f7;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > div:last-child .text-4xl {
+            margin-top: 0.16rem;
+            font-size: 1.25rem;
+            line-height: 1.1;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > div:last-child .btn {
+            margin-top: 0.4rem;
+            width: 100%;
+            min-height: 1.85rem;
+            font-size: 0.63rem;
+        }
+
+        @media (max-width: 640px) {
+            .bk-hero > div:first-child {
+                align-items: flex-start;
+            }
+
+            .bk-hero-actions {
+                max-width: 55%;
+            }
+
+            .bk-hero-actions .bk-btn {
+                width: auto;
+            }
+
+            .bk-page > .bk-guest-room > .space-y-4 {
+                gap: 0.35rem;
+            }
+
+            body.booking-detail-body .bk-page > .bk-guest-room > article {
+                min-height: 14rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            body.booking-detail-body .bk-page > .bk-guest-room > article {
+                min-height: auto;
+            }
+
+            body.booking-detail-body .bk-page > .bk-summary > .grid {
+                grid-template-columns: minmax(0, 1fr) 9rem;
+            }
+        }
+
+        body.booking-detail-body .app-header {
+            height: 3.45rem;
+            min-height: 3.45rem;
+            padding-inline: 1rem;
+        }
+
+        body.booking-detail-body .app-main {
+            min-height: calc(100vh - 3.45rem);
+            padding: 0.78rem 0.8rem 1rem;
+        }
+
+        body.booking-detail-body .app-header p {
+            font-size: 0.78rem;
+        }
+
+        .booking-page-tools {
+            font-size: 0.75rem;
+        }
+
+        .booking-search {
+            height: 2rem;
+        }
+
+        .bk-page {
+            gap: 0.58rem;
+        }
+
+        .bk-hero {
+            min-height: 4.65rem;
+            padding: 0.58rem 0.72rem;
+        }
+
+        .bk-hero-mark {
+            width: 1.55rem;
+            height: 1.55rem;
+        }
+
+        .bk-kicker {
+            font-size: 0.63rem;
+        }
+
+        .bk-guest-name {
+            font-size: clamp(1.12rem, 2.55vw, 1.42rem);
+        }
+
+        .bk-hero-meta {
+            gap: 0.24rem 0.72rem;
+            font-size: 0.68rem;
+        }
+
+        .bk-hero-meta svg {
+            width: 0.78rem;
+            height: 0.78rem;
+        }
+
+        .bk-hero-actions {
+            gap: 0.34rem;
+        }
+
+        .bk-action-stack {
+            gap: 0.34rem;
+        }
+
+        .bk-btn,
+        .bk-hero-actions .bk-btn {
+            min-height: 1.95rem;
+            padding: 0.36rem 0.56rem;
+            font-size: 0.69rem;
+        }
+
+        .bk-btn svg {
+            width: 0.82rem;
+            height: 0.82rem;
+        }
+
+        .bk-badge {
+            padding: 0.2rem 0.46rem;
+            font-size: 0.6rem;
+        }
+
+        .bk-page .bk-icon {
+            width: 1.38rem;
+            height: 1.38rem;
+        }
+
+        .bk-page .bk-icon svg {
+            width: 0.82rem;
+            height: 0.82rem;
+        }
+
+        .bk-kpi-grid {
+            gap: 0.46rem;
+        }
+
+        .bk-kpi {
+            min-height: 5.2rem;
+            padding: 0.52rem 0.58rem;
+        }
+
+        .bk-kpi-title {
+            min-height: 1.35rem;
+            gap: 0.34rem;
+            font-size: clamp(0.63rem, 1.15vw, 0.73rem);
+        }
+
+        .bk-kpi .stat-num {
+            margin-top: 0.4rem;
+            font-size: clamp(0.86rem, 1.55vw, 1.05rem);
+        }
+
+        .bk-kpi p {
+            margin-top: 0.16rem;
+            font-size: clamp(0.58rem, 0.98vw, 0.68rem);
+        }
+
+        .bk-kpi .bk-progress-row {
+            padding-top: 0.34rem;
+        }
+
+        .bk-progress {
+            height: 0.28rem;
+        }
+
+        .bk-split {
+            gap: 0.55rem;
+        }
+
+        .bk-card-wrap {
+            padding: 0.68rem;
+        }
+
+        .bk-card-wrap > .flex.items-start.gap-3,
+        .bk-card-wrap > .flex.items-start.justify-between.gap-3 {
+            min-height: 1.85rem;
+            gap: 0.46rem;
+        }
+
+        .bk-page h3 {
+            font-size: 0.81rem;
+        }
+
+        .bk-page .text-xs {
+            font-size: 0.65rem;
+        }
+
+        .bk-page .text-sm {
+            font-size: 0.75rem;
+        }
+
+        .bk-page .mt-5 {
+            margin-top: 0.65rem;
+        }
+
+        .bk-page .mt-4 {
+            margin-top: 0.55rem;
+        }
+
+        .bk-page .mt-3 {
+            margin-top: 0.42rem;
+        }
+
+        .bk-page .mt-2 {
+            margin-top: 0.32rem;
+        }
+
+        .bk-page .gap-3 {
+            gap: 0.5rem;
+        }
+
+        .bk-page .gap-4 {
+            gap: 0.6rem;
+        }
+
+        .bk-page .space-y-4 > :not(:first-child) {
+            margin-top: 0.54rem;
+        }
+
+        .bk-page .space-y-6 > :not(:first-child) {
+            margin-top: 0.78rem;
+        }
+
+        .bk-page .bk-timeline .font-semibold {
+            font-size: 0.76rem;
+        }
+
+        .bk-page .bk-timeline [class~="text-[11px]"] {
+            font-size: 0.62rem;
+        }
+
+        .bk-nights {
+            width: 4.25rem;
+            height: 4.25rem;
+        }
+
+        .bk-page .bk-nights .stat-num {
+            font-size: 1.28rem;
+        }
+
+        .bk-page .bk-nights [class~="text-[10px]"] {
+            font-size: 0.58rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-stay-payment > .bk-card {
+            min-height: 9rem;
+        }
+
+        body.booking-detail-body .bk-page .pay-ring,
+        body.booking-detail-body .bk-page svg[viewBox="0 0 120 120"] {
+            width: 5.75rem;
+            height: 5.75rem;
+        }
+
+        body.booking-detail-body .bk-page #paid-pct-label {
+            font-size: 1.2rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article {
+            min-height: 17.2rem;
+        }
+
+        .booking-checkout-facts > div {
+            padding: 0.55rem;
+        }
+
+        .booking-checkout-facts span {
+            font-size: 0.65rem;
+        }
+
+        .booking-checkout-facts strong {
+            font-size: 0.75rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-5 .h-12.w-12 {
+            width: 2.3rem;
+            height: 2.3rem;
+            font-size: 0.7rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-5 .text-lg {
+            font-size: 0.82rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid {
+            gap: 0.3rem;
+            font-size: 0.66rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 > div {
+            padding: 0.38rem 0.24rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 .h-8.w-8 {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child > .mt-4.grid-cols-3 .stat-num {
+            font-size: 0.88rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article:first-child img:not(.booking-room-photo) {
+            height: 3.7rem;
+        }
+
+        body.booking-detail-body .bk-page .h-28.w-36 {
+            width: 6.3rem;
+            height: 4.8rem;
+            flex-basis: 6.3rem;
+        }
+
+        body.booking-detail-body .bk-page .text-xl {
+            font-size: 0.92rem;
+        }
+
+        body.booking-detail-body .bk-page .input {
+            min-height: 2.05rem;
+            font-size: 0.7rem;
+        }
+
+        body.booking-detail-body .bk-page .btn {
+            min-height: 2rem;
+            font-size: 0.7rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer .grid-cols-4 > div {
+            padding: 0.4rem 0.16rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer .grid-cols-4 .stat-num {
+            font-size: 0.98rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer [class~="text-[10px]"] {
+            font-size: 0.56rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras > article {
+            min-height: 6.8rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .bk-table th {
+            padding: 0.34rem 0.27rem;
+            font-size: 0.59rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .bk-table td {
+            padding: 0.42rem 0.27rem;
+            font-size: 0.67rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras .min-h-40 {
+            min-height: 5.4rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-card-wrap {
+            padding: 0.74rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 > :not(:first-child) {
+            margin-top: 0.42rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 > div {
+            font-size: 0.69rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > div:last-child {
+            gap: 0.62rem;
+            padding: 0.8rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > div:last-child .text-4xl {
+            font-size: 1.42rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > div:last-child .btn {
+            min-height: 2.05rem;
+            font-size: 0.7rem;
+        }
+
+        @media (max-width: 640px) {
+            body.booking-detail-body .app-main {
+                padding: 0.65rem 0.55rem 0.85rem;
+            }
+
+            .bk-page {
+                gap: 0.5rem;
+            }
+
+            .bk-kpi {
+                min-height: 4.45rem;
+                padding: 0.4rem;
+            }
+
+            .bk-kpi-title {
+                font-size: 0.61rem;
+            }
+
+            .bk-kpi .stat-num {
+                font-size: 0.88rem;
+            }
+
+            .bk-page h3 {
+                font-size: 0.76rem;
+            }
+
+            .bk-page .text-xs {
+                font-size: 0.61rem;
+            }
+
+            .bk-page .text-sm {
+                font-size: 0.7rem;
+            }
+
+            .bk-card-wrap {
+                padding: 0.55rem;
+            }
+
+            .bk-hero {
+                min-height: auto;
+                padding: 0.55rem;
+            }
+
+            .bk-hero-meta {
+                font-size: 0.62rem;
+            }
+
+            .bk-hero-actions .bk-btn {
+                min-height: 1.8rem;
+                padding-inline: 0.42rem;
+                font-size: 0.62rem;
+            }
+
+            body.booking-detail-body .bk-page > .bk-guest-room > article {
+                min-height: 15.5rem;
+            }
+
+            body.booking-detail-body .bk-page .h-28.w-36 {
+                width: 5.55rem;
+                height: 4.35rem;
+                flex-basis: 5.55rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .bk-kpi {
+                min-height: 4.6rem;
+            }
+
+            .bk-kpi-title {
+                font-size: 0.68rem;
+            }
+
+            .bk-kpi p {
+                font-size: 0.62rem;
+            }
+
+            .bk-page h3 {
+                font-size: 0.82rem;
+            }
+
+            body.booking-detail-body .bk-page > .bk-guest-room > article {
+                min-height: auto;
+            }
+
+            body.booking-detail-body .bk-page > .bk-summary > .grid {
+                grid-template-columns: minmax(0, 1fr) 9.5rem;
+            }
+        }
+
+        .bk-page {
+            gap: 0.68rem;
+        }
+
+        .bk-hero {
+            min-height: 4.9rem;
+            padding: 0.66rem 0.8rem;
+        }
+
+        .bk-guest-name {
+            font-size: clamp(1.18rem, 2.7vw, 1.5rem);
+        }
+
+        .bk-hero-meta {
+            font-size: 0.72rem;
+        }
+
+        .bk-hero-actions .bk-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.68;
+        }
+
+        .bk-action-stack {
+            min-width: 10.5rem;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.52rem;
+            padding: 0.42rem;
+            border: 1px solid #edf0f4;
+            border-radius: 0.48rem;
+            background: #fff;
+        }
+
+        .booking-services-button,
+        .bk-action-stack > .booking-checked-out-button {
+            width: 9.5rem;
+            min-height: 2.1rem;
+            justify-content: center;
+            padding: 0.42rem 0.62rem;
+            font-size: 0.72rem;
+        }
+
+        .bk-action-stack form {
+            display: flex;
+            width: 100%;
+        }
+
+        .bk-action-stack .bk-btn {
+            width: 100%;
+            min-height: 2.1rem;
+            justify-content: center;
+            padding: 0.42rem 0.62rem;
+            font-size: 0.72rem;
+        }
+
+        .bk-cancel-action {
+            display: flex;
+            flex: 0 0 100%;
+            justify-content: flex-end;
+        }
+
+        .bk-cancel-action form {
+            display: flex;
+            width: 10.5rem;
+        }
+
+        .bk-cancel-action .bk-btn {
+            width: 100%;
+            min-height: 2.1rem;
+            justify-content: center;
+            padding: 0.42rem 0.62rem;
+            font-size: 0.72rem;
+        }
+
+        .booking-checked-out-button:disabled {
+            cursor: default;
+            opacity: 1;
+        }
+
+        .booking-cancel-disabled:disabled {
+            border: 1px solid #ef9aaa;
+            background: #fff;
+            color: #bd2746;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
+        .bk-kpi {
+            min-height: 5.55rem;
+            padding: 0.6rem 0.66rem;
+        }
+
+        .bk-kpi-title {
+            font-size: clamp(0.67rem, 1.2vw, 0.78rem);
+        }
+
+        .bk-kpi .stat-num {
+            font-size: clamp(0.92rem, 1.65vw, 1.12rem);
+        }
+
+        .bk-kpi p {
+            font-size: clamp(0.62rem, 1vw, 0.72rem);
+        }
+
+        .bk-card-wrap {
+            padding: 0.78rem;
+        }
+
+        .bk-page h3 {
+            font-size: 0.86rem;
+        }
+
+        .bk-page .text-xs {
+            font-size: 0.68rem;
+        }
+
+        .bk-page .text-sm {
+            font-size: 0.78rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-stay-payment > .bk-card {
+            min-height: 9.6rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > article {
+            min-height: 18.2rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-rent-extras > article {
+            min-height: 7.4rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-card-wrap {
+            padding: 0.86rem;
+        }
+
+        @media (max-width: 640px) {
+            .bk-hero-actions {
+                width: 100%;
+                max-width: 100%;
+                justify-content: flex-start;
+            }
+
+            .bk-action-stack {
+                min-width: 0;
+                width: auto;
+                padding: 0.34rem;
+            }
+
+            .bk-cancel-action form,
+            .bk-cancel-action > .bk-btn {
+                width: 10.5rem;
+            }
+
+            .booking-services-button,
+            .bk-action-stack > .booking-checked-out-button {
+                width: 9.5rem;
+            }
+
+            .bk-kpi {
+                min-height: 4.85rem;
+            }
+
+            body.booking-detail-body .bk-page > .bk-guest-room > article {
+                min-height: 16.2rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            body.booking-detail-body .bk-page > .bk-guest-room > article {
+                min-height: auto;
+            }
+        }
+
+        .bk-hero {
+            min-height: 9.2rem;
+            padding: 0.85rem 1rem;
+            border-radius: 1rem;
+            background: linear-gradient(105deg, #fff8fa 0%, #fff0f3 100%);
+        }
+
+        .bk-hero > div:first-child {
+            align-items: center;
+            gap: 0.9rem;
+        }
+
+        .bk-hero-mark {
+            width: 3rem;
+            height: 3rem;
+            background: #ffe5eb;
+            color: #c02f56;
+        }
+
+        .bk-kicker {
+            font-size: 0.75rem;
+        }
+
+        .bk-guest-name {
+            margin-top: 0.24rem;
+            font-size: clamp(1.5rem, 2.15vw, 2.1rem);
+            line-height: 1.08;
+        }
+
+        .bk-hero-meta {
+            margin-top: 0.65rem;
+            gap: 0.45rem 1.3rem;
+            font-size: 0.88rem;
+        }
+
+        .bk-hero-meta svg {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .bk-hero-actions {
+            display: grid;
+            grid-template-columns: repeat(4, max-content);
+            grid-template-rows: auto auto;
+            align-items: center;
+            justify-content: end;
+            gap: 0.55rem;
+            position: absolute;
+            top: 0.85rem;
+            right: 1rem;
+            max-width: none;
+            margin: 0;
+        }
+
+        .bk-action-stack {
+            display: contents;
+        }
+
+        .bk-action-stack form {
+            margin: 0;
+        }
+
+        .bk-hero-actions > .bk-btn,
+        .bk-action-stack .bk-btn {
+            min-height: 3rem;
+            padding: 0.65rem 1rem;
+            border-radius: 0.7rem;
+            font-size: 0.82rem;
+        }
+
+        .bk-hero-actions > .bk-btn svg,
+        .bk-action-stack .bk-btn svg {
+            width: 1.05rem;
+            height: 1.05rem;
+        }
+
+        .bk-hero-actions .booking-services-button {
+            width: auto;
+        }
+
+        .bk-action-stack .bk-btn-primary {
+            width: 10.8rem;
+        }
+
+        .bk-action-stack .booking-checked-out-button:disabled {
+            border-color: #a80f3d;
+            background: #a80f3d;
+            color: #fff;
+            opacity: 1;
+            box-shadow: 0 5px 12px rgba(168, 15, 61, 0.2);
+        }
+
+        .bk-cancel-action {
+            grid-column: 4;
+            grid-row: 2;
+            width: 10.8rem;
+            flex: none;
+        }
+
+        .bk-cancel-action form,
+        .bk-cancel-action > .bk-btn {
+            width: 100%;
+        }
+
+        .bk-cancel-action .bk-btn {
+            min-height: 2.8rem;
+            padding: 0.6rem 0.85rem;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 1360px) {
+            .bk-hero > div:first-child {
+                align-items: flex-start;
+            }
+
+            .bk-hero-actions {
+                position: static;
+                width: 100%;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-rows: auto auto auto;
+                justify-content: stretch;
+            }
+
+            .bk-hero-actions > .bk-btn,
+            .bk-action-stack .bk-btn {
+                width: 100%;
+            }
+
+            .bk-action-stack form {
+                width: 100%;
+            }
+
+            .bk-cancel-action {
+                grid-column: 2;
+                grid-row: 3;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .bk-hero {
+                min-height: 0;
+                padding: 0.9rem;
+            }
+
+            .bk-hero > div:first-child {
+                width: 100%;
+                align-items: flex-start;
+            }
+
+            .bk-hero-mark {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+
+            .bk-guest-name {
+                font-size: clamp(1.35rem, 6vw, 1.8rem);
+            }
+
+            .bk-hero-actions {
+                width: 100%;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-rows: auto auto auto;
+                max-width: 100%;
+                justify-content: stretch;
+                gap: 0.45rem;
+            }
+
+            .bk-hero-actions > .bk-btn,
+            .bk-action-stack .bk-btn {
+                width: 100%;
+                min-height: 2.65rem;
+                padding: 0.5rem 0.6rem;
+                font-size: 0.76rem;
+            }
+
+            .bk-action-stack form {
+                width: 100%;
+            }
+
+            .bk-cancel-action {
+                grid-column: 2;
+                grid-row: 3;
+                width: 100%;
+            }
+
+            .bk-cancel-action .bk-btn {
+                min-height: 2.65rem;
+                font-size: 0.72rem;
+            }
+        }
+
+        .bk-payment-chart {
+            width: 184px;
+            height: 184px;
+            flex: 0 0 184px;
+        }
+
+        .bk-page .bk-nights {
+            border-radius: 0.85rem;
+        }
+
+        .bk-kpi .stat-num {
+            font-weight: 500;
+        }
+
+        .bk-payment-chart svg {
+            width: 184px !important;
+            height: 184px !important;
+        }
+
+        .bk-payment-breakdown {
+            min-width: 12rem;
+            border: 1px solid #f7e0e6;
+            border-radius: 0.8rem;
+            background: #fff7f9;
+            padding: 0.75rem 1rem;
+        }
+
+        .bk-payment-breakdown > div {
+            min-height: 2.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .bk-payment-breakdown > div + div {
+            border-top: 1px solid #f3e2e7;
+        }
+
+        @media (max-width: 640px) {
+            .bk-payment-chart,
+            .bk-payment-chart svg {
+                width: 168px !important;
+                height: 168px !important;
+            }
+
+            .bk-payment-chart {
+                flex-basis: 168px;
+            }
+
+            .bk-payment-breakdown {
+                min-width: 0;
+                padding: 0.6rem 0.8rem;
+            }
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 > article:first-child {
+            min-height: 10rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 > :not(:first-child) {
+            margin-top: 0;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 > article:first-child {
+            flex: 0 0 auto;
+        }
+
+        body.booking-detail-body .bk-page > .bk-guest-room > .space-y-4 > article {
+            padding: 0.5rem;
+        }
+
+        body.booking-detail-body .bk-page .h-28.w-36 {
+            width: 7rem;
+            height: 6rem;
+            flex-basis: 7rem;
+        }
+
+        body.booking-detail-body .bk-page #checkout-timer,
+        body.booking-detail-body .bk-page .booking-checkout-complete {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 10rem;
+        }
+
+        .booking-checkout-facts {
+            gap: 0.28rem;
+            margin-top: 0.55rem;
+        }
+
+        .booking-checkout-facts > div {
+            gap: 0.12rem;
+            padding: 0.35rem;
+        }
+
+        .booking-checkout-note {
+            padding-top: 0.35rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid {
+            grid-template-columns: minmax(0, 1fr) minmax(15rem, 36%);
+            align-items: stretch;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-card-wrap {
+            padding: 1rem 1.15rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 {
+            margin-top: 0.8rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 > div {
+            min-height: 1.85rem;
+            align-items: center;
+            border-bottom: 1px solid #edf0f4;
+            padding: 0.3rem 0.55rem;
+            font-size: 0.82rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .space-y-3 > .summary-total {
+            min-height: 2.8rem;
+            margin-top: 0.35rem;
+            border: 0;
+            border-radius: 0.55rem;
+            background: #f1f3f5;
+            padding: 0.55rem 0.7rem;
+            font-size: 0.95rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .summary-total .stat-num {
+            font-size: 1.12rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > .bk-summary-due {
+            position: relative;
+            justify-content: flex-start !important;
+            gap: 0.45rem;
+            margin: 0.8rem;
+            border: 1px solid #f6e0e6;
+            border-radius: 0.8rem;
+            background: #fff2f5;
+            padding: 1.1rem 1.2rem;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > .bk-summary-due > .bk-summary-due-content {
+            position: absolute;
+            top: 50%;
+            right: 1.2rem;
+            left: 1.2rem;
+            transform: translateY(-50%);
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-summary-due-content > .text-sm {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-summary-due-content > .text-4xl {
+            font-size: 2.15rem;
+            font-weight: 800;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-summary-due-content > p {
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > .bk-summary-due > .mt-6 {
+            margin-top: auto !important;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary .bk-summary-due .text-4xl {
+            margin-top: 0.35rem;
+            font-size: 1.9rem;
+            line-height: 1.1;
+        }
+
+        body.booking-detail-body .bk-page > .bk-summary > .grid > .bk-summary-due .btn {
+            min-height: 3.3rem !important;
+            margin-top: 1rem;
+            border-radius: 0.55rem;
+            font-size: 0.84rem;
+        }
+
+        @media (max-width: 640px) {
+            body.booking-detail-body .bk-page > .bk-summary > .grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            body.booking-detail-body .bk-page > .bk-summary .bk-card-wrap {
+                padding: 0.85rem;
+            }
+
+            body.booking-detail-body .bk-page > .bk-summary .bk-summary-due {
+                margin: 0 0.65rem 0.65rem;
+                padding: 0.9rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body.booking-detail-body .bk-page .h-28.w-36 {
+                width: 6.2rem;
+                height: 5.2rem;
+                flex-basis: 6.2rem;
+            }
+        }
     </style>
 
     <div class="bk-page">
@@ -572,10 +2685,10 @@
                     <a href="{{ route('bookings.bill', $booking) }}" class="bk-btn">
                         <x-icon name="print" size="sm" /> Bill
                     </a>
-                    <a href="{{ route('bookings.services.download', $booking) }}" class="bk-btn">
+                    <a href="{{ route('bookings.services.download', $booking) }}" class="bk-btn booking-services-button">
                         <x-icon name="cart" size="sm" /> Services
                     </a>
-                    @if($booking->isActive())
+                    @if($booking->isActive() || $booking->status === 'checked_out')
                         <a href="{{ route('bookings.edit', $booking) }}" class="bk-btn">
                             <x-icon name="edit" size="sm" /> Edit
                         </a>
@@ -586,11 +2699,17 @@
                         @endif
                         @if($booking->status === 'checked_in')
                             <button type="button" class="bk-btn bk-btn-primary" data-modal-open="checkout-modal"><x-icon name="logout" size="sm" /> Check Out</button>
-                        @endif
-                        @if($booking->isActive())
-                            <form method="POST" action="{{ route('bookings.cancel', $booking) }}" onsubmit="return confirm('Cancel this booking?')">@csrf<button class="bk-btn bk-btn-cancel"><x-icon name="x" size="sm" /> Cancel Booking</button></form>
+                        @elseif($booking->status === 'checked_out')
+                            <button type="button" class="bk-btn bk-btn-primary booking-checked-out-button" disabled aria-disabled="true">
+                                <x-icon name="check" size="sm" /> Checked Out
+                            </button>
                         @endif
                     </div>
+                    @if($booking->isActive() || $booking->status === 'checked_out')
+                        <div class="bk-cancel-action">
+                            <form method="POST" action="{{ route('bookings.cancel', $booking) }}" onsubmit="return confirm('Cancel this booking?')">@csrf<button class="bk-btn bk-btn-cancel"><x-icon name="x-circle" size="sm" /> Cancel Booking</button></form>
+                        </div>
+                    @endif
                 </div>
             </div>
         </section>
@@ -665,7 +2784,7 @@
             </article>
         </section>
 
-        <section class="bk-split">
+        <section class="bk-split bk-stay-payment">
             <article class="bk-card bk-card-wrap">
                 <div class="flex items-start gap-3">
                     <span class="bk-icon bg-rose-50 text-crimson"><x-icon name="calendar" size="sm" /></span>
@@ -691,6 +2810,7 @@
                     </div>
                     <div class="bk-nights">
                         <div>
+                            <x-icon name="moon" size="sm" class="bk-night-moon" />
                             <div class="stat-num text-2xl font-semibold">{{ $baseNights }}</div>
                             <div class="mt-1 text-[10px] font-bold uppercase tracking-[0.18em]">Nights</div>
                         </div>
@@ -714,8 +2834,8 @@
                     </div>
                 </div>
                 <div class="mt-5 flex flex-wrap items-center gap-6">
-                    <div class="relative mx-auto grid place-items-center">
-                        <svg width="148" height="148" viewBox="0 0 120 120" aria-hidden="true">
+                    <div class="bk-payment-chart relative mx-auto grid place-items-center">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
                             <circle cx="60" cy="60" r="{{ $ringRadius }}" fill="none" stroke="#e5e7eb" stroke-width="12"></circle>
                             <circle id="pay-ring-arc" cx="60" cy="60" r="{{ $ringRadius }}" fill="none" stroke="#059669" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ number_format($ringCirc, 2, '.', '') }}" stroke-dashoffset="{{ number_format($ringOffset, 2, '.', '') }}" transform="rotate(-90 60 60)"></circle>
                         </svg>
@@ -726,7 +2846,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="min-w-[12rem] flex-1 space-y-3 text-sm">
+                    <div class="bk-payment-breakdown flex-1 space-y-1 text-sm">
                         <div class="flex items-center justify-between gap-3">
                             <span class="bk-meta">Total Amount</span>
                             <span class="stat-num font-semibold">@money($totalBilled)</span>
@@ -744,14 +2864,19 @@
             </article>
         </section>
 
-        <section class="bk-split">
+        <section class="bk-split bk-guest-room">
             <article class="bk-card bk-card-wrap">
-                <div class="flex items-start gap-3">
+                <div class="flex items-start justify-between gap-3">
                     <span class="bk-icon bg-rose-50 text-crimson"><x-icon name="user" size="sm" /></span>
                     <div>
                         <h3 class="text-base font-semibold text-slate-900">Guest Profile</h3>
                         <p class="text-xs bk-meta">Guest identity and stay details</p>
                     </div>
+                    @if($booking->isActive())
+                        <a href="{{ route('bookings.edit', $booking) }}" class="btn btn-ghost ml-auto">
+                            <x-icon name="edit" size="sm" /> Edit
+                        </a>
+                    @endif
                 </div>
 
                 <div class="mt-5 flex items-start gap-3">
@@ -788,17 +2913,33 @@
 
                 <div class="mt-5">
                     <div class="text-sm font-semibold text-slate-900">Identity Documents</div>
-                    @if($documentUrls->isNotEmpty())
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                            @foreach($documentUrls->take(2) as $url)
-                                <a href="{{ $url }}" target="_blank" class="block overflow-hidden rounded-2xl border border-slate-200 transition hover:scale-[1.01] hover:border-rose-200">
-                                    <img src="{{ $url }}" alt="Identity document" class="h-36 w-full object-cover">
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        @foreach($guestDocuments as $document)
+                            <div class="overflow-hidden rounded-2xl border border-slate-200">
+                                <div class="border-b border-slate-100 px-3 py-2 text-xs font-semibold capitalize text-slate-700">{{ $document['label'] }}</div>
+                                @if($document['url'])
+                                    <a href="{{ $document['url'] }}" target="_blank" class="block transition hover:scale-[1.01] hover:border-rose-200">
+                                        <img src="{{ $document['url'] }}" alt="{{ $document['label'] }}" class="h-36 w-full object-cover">
+                                    </a>
+                                @else
+                                    <p class="px-3 py-5 text-xs bk-meta">No {{ $document['label'] }} uploaded.</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    @if($companionDocuments->isNotEmpty())
+                        <div class="mt-4 text-sm font-semibold text-slate-900">Other guests’ ID documents</div>
+                        <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                            @foreach($companionDocuments as $document)
+                                <a href="{{ $document['url'] }}" target="_blank" class="block overflow-hidden rounded-2xl border border-slate-200 transition hover:scale-[1.01] hover:border-rose-200">
+                                    <div class="border-b border-slate-100 px-3 py-2 text-xs font-semibold text-slate-700">{{ $document['label'] }}</div>
+                                    <img src="{{ $document['url'] }}" alt="{{ $document['label'] }}" class="h-36 w-full object-cover">
                                 </a>
                             @endforeach
                         </div>
+                    @endif
+                    @if($documentUrls->isNotEmpty())
                         <a href="{{ $documentUrls->first() }}" target="_blank" class="mt-3 inline-flex text-sm font-medium text-crimson">View all documents ({{ $documentUrls->count() }})</a>
-                    @else
-                        <p class="mt-2 text-sm bk-meta">No identity documents uploaded.</p>
                     @endif
                 </div>
 
@@ -832,7 +2973,7 @@
                     </div>
                     <div class="mt-4 flex gap-4">
                         <div class="grid h-28 w-36 shrink-0 place-items-center overflow-hidden rounded-2xl bg-stone-100 text-crimson">
-                            <x-icon name="bed" size="lg" />
+                            <img src="{{ asset('images/cyberstay-room.jpg') }}" alt="Hotel room" class="booking-room-photo">
                         </div>
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
@@ -905,11 +3046,41 @@
                         <p class="mt-3 text-sm bk-meta">Cutoff: {{ $scheduledCheckOutAt->format('d M Y, h:i A') }}</p>
                         <div id="late-charge-hint" class="mt-3 {{ $lateDays > 0 ? '' : 'hidden' }} rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900"></div>
                     </article>
+                @elseif($booking->status === 'checked_out')
+                    <article class="bk-card bk-card-wrap booking-checkout-complete">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <span class="bk-icon bg-emerald-50 text-emerald-700"><x-icon name="check" size="sm" /></span>
+                                <div>
+                                    <h3 class="text-base font-semibold text-slate-900">Checkout Information</h3>
+                                    <p class="text-xs bk-meta">Guest checkout is complete</p>
+                                </div>
+                            </div>
+                            <span class="bk-badge bk-badge-success">Completed</span>
+                        </div>
+                        <div class="booking-checkout-facts">
+                            <div>
+                                <span>Checkout date</span>
+                                <strong>{{ $booking->checked_out_at?->format('d M Y') ?? $booking->check_out->format('d M Y') }}</strong>
+                            </div>
+                            <div>
+                                <span>Checkout time</span>
+                                <strong>{{ $booking->checked_out_at?->format('h:i A') ?? '—' }}</strong>
+                            </div>
+                            <div>
+                                <span>Stay duration</span>
+                                <strong>{{ $baseNights }} {{ \Illuminate\Support\Str::plural('night', $baseNights) }}</strong>
+                            </div>
+                        </div>
+                        @if($booking->checkout_note)
+                            <p class="booking-checkout-note">{{ $booking->checkout_note }}</p>
+                        @endif
+                    </article>
                 @endif
             </div>
         </section>
 
-        <section class="bk-split">
+        <section class="bk-split bk-rent-extras">
             <article class="bk-card bk-card-wrap">
                 <div class="flex items-start gap-3">
                     <span class="bk-icon bg-rose-50 text-crimson"><x-icon name="receipt" size="sm" /></span>
@@ -1032,7 +3203,7 @@
             </article>
         </section>
 
-        <section class="bk-card overflow-hidden">
+        <section class="bk-card bk-summary overflow-hidden">
             <div class="grid lg:grid-cols-[minmax(0,1fr)_18.5rem]">
                 <div class="bk-card-wrap">
                     <div class="flex items-start gap-3">
@@ -1042,12 +3213,12 @@
                             <p class="text-xs bk-meta">Complete breakdown of charges</p>
                         </div>
                     </div>
-                    <div class="mt-5 space-y-3 text-sm">
+                    <div class="summary-rows mt-5 space-y-3 text-sm">
                         <div class="flex justify-between"><span class="bk-meta">Room Rent (per night)</span><span class="stat-num">@money($booking->price_per_night)</span></div>
                         <div class="flex justify-between"><span class="bk-meta">Room Rent ({{ $baseNights }} {{ \Illuminate\Support\Str::plural('night', $baseNights) }})</span><span class="stat-num">@money($baseRoomAmount)</span></div>
                         <div class="flex justify-between"><span class="bk-meta">Extra Charges</span><span class="stat-num">@money($extrasAmount)</span></div>
                         <div class="flex justify-between"><span class="bk-meta">Paid Amount</span><span class="stat-num text-crimson">- @money($paidAmount)</span></div>
-                        <div class="flex justify-between border-t border-slate-200 pt-3 text-base font-semibold"><span>Total Amount</span><span class="stat-num">@money($totalBilled)</span></div>
+                        <div class="summary-total flex justify-between text-base font-semibold"><span>Total Amount</span><span class="stat-num">@money($totalBilled)</span></div>
                     </div>
                     @if($booking->checkout_note)
                         <div class="mt-4 rounded-xl bg-slate-50 p-3 text-sm bk-meta border border-slate-200">
@@ -1056,8 +3227,8 @@
                         </div>
                     @endif
                 </div>
-                <div class="flex flex-col justify-between border-t border-slate-200 bg-rose-50/70 p-5 sm:p-6 lg:border-l lg:border-t-0">
-                    <div>
+                <div class="bk-summary-due flex flex-col justify-between">
+                    <div class="bk-summary-due-content">
                         <div class="text-sm bk-meta">Amount Due</div>
                         <div class="stat-num mt-2 text-4xl font-semibold text-crimson">@money($totalDue)</div>
                         <p class="mt-2 text-xs bk-meta">Remaining balance to be collected</p>
@@ -1068,6 +3239,10 @@
                         </button>
                     @elseif($booking->status === 'reserved')
                         <form method="POST" action="{{ route('bookings.check-in', $booking) }}" class="mt-6">@csrf<button class="btn btn-primary w-full"><x-icon name="door" size="sm" /> Check In Guest</button></form>
+                    @elseif($booking->status === 'checked_out')
+                        <button type="button" class="btn btn-primary mt-6 w-full" disabled aria-disabled="true">
+                            <x-icon name="check" size="sm" /> Checked Out
+                        </button>
                     @endif
                 </div>
             </div>

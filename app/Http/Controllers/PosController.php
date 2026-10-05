@@ -26,7 +26,16 @@ class PosController extends Controller
 
         $items = PosItem::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('pos.index', compact('booking', 'activeBookings', 'items'));
+        $todayItems = BookingItem::query()->whereDate('created_at', today());
+        $todaySales = (float) (clone $todayItems)->sum('total');
+        $todayCount = (int) (clone $todayItems)->sum('qty');
+
+        $recentCharges = BookingItem::with('booking.room')
+            ->latest()
+            ->limit(6)
+            ->get();
+
+        return view('pos.index', compact('booking', 'activeBookings', 'items', 'todaySales', 'todayCount', 'recentCharges'));
     }
 
     public function addItem(Request $request, Booking $booking)

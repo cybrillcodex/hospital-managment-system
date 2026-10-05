@@ -137,8 +137,8 @@ class BookingController extends Controller
 
     public function edit(Booking $booking)
     {
-        if (! $booking->isActive()) {
-            return back()->with('error', 'Only active bookings can be edited.');
+        if (! $booking->isActive() && $booking->status !== 'checked_out') {
+            return back()->with('error', 'Only active or checked-out bookings can be edited.');
         }
 
         $rooms = $this->roomsForDesk();
@@ -149,10 +149,11 @@ class BookingController extends Controller
 
     public function update(Request $request, Booking $booking)
     {
-        if (! $booking->isActive()) {
-            return back()->with('error', 'Only active bookings can be edited.');
+        if (! $booking->isActive() && $booking->status !== 'checked_out') {
+            return back()->with('error', 'Only active or checked-out bookings can be edited.');
         }
 
+        $isActive = $booking->isActive();
         $data = $this->validated($request, $booking->id);
         $nights = $this->bookings->nights($data['check_in'], $data['check_out']);
         $persons = (int) $data['males'] + (int) $data['females'] + (int) $data['children'];
@@ -178,10 +179,17 @@ class BookingController extends Controller
         $switchedAt = now();
         $oldRoomId = (int) $booking->room_id;
 
-        DB::transaction(function () use ($request, $booking, $data, $customer, $totals, $switchedAt, $oldRoomId): void {
+        DB::transaction(function () use ($request, $booking, $data, $customer, $totals, $switchedAt, $oldRoomId, $isActive): void {
             if ($oldRoomId !== (int) $data['room_id']) {
-                $this->ensureCurrentRoomHistory($booking, $switchedAt, $request->user()->id);
-                $this->closeCurrentRoomHistory($booking, $switchedAt);
+                if ($isActive) {
+                    $this->ensureCurrentRoomHistory($booking, $switchedAt, $request->user()->id);
+                    $this->closeCurrentRoomHistory($booking, $switchedAt);
+                } else {
+                    $booking->roomHistories()
+                        ->latest('started_at')
+                        ->first()
+                        ?->update(['room_id' => $data['room_id']]);
+                }
             }
 
             $booking->update([
@@ -200,7 +208,7 @@ class BookingController extends Controller
                 'id_card_back' => $this->idCards->store($request->file('id_card_back'), 'id-cards', $booking->id_card_back),
             ]);
 
-            if ($oldRoomId !== (int) $data['room_id']) {
+            if ($isActive && $oldRoomId !== (int) $data['room_id']) {
                 $this->openRoomHistory($booking, $switchedAt, $request->user()->id);
             }
         });
@@ -417,7 +425,7 @@ class BookingController extends Controller
 
     public function cancel(Booking $booking)
     {
-        if (! $booking->isActive()) {
+        if (! $booking->isActive() && $booking->status !== 'checked_out') {
             return back()->with('error', 'This booking cannot be cancelled.');
         }
 

@@ -10,9 +10,27 @@ class RoomController extends Controller
 {
     public function index()
     {
-        $rooms = Room::query()->orderBy('number')->get();
+        $today = now()->toDateString();
+        $rooms = Room::query()
+            ->with(['bookings' => fn ($query) => $query
+                ->select(['id', 'room_id', 'status', 'checked_in_at', 'check_in', 'check_out'])
+                ->where(function ($query) use ($today) {
+                    $query->where(function ($checkedIn) {
+                        $checkedIn->where('status', 'checked_in')
+                            ->whereNotNull('checked_in_at');
+                    })->orWhere(function ($reserved) use ($today) {
+                        $reserved->where('status', 'reserved')
+                            ->whereDate('check_in', '<=', $today)
+                            ->whereDate('check_out', '>', $today);
+                    });
+                })
+                ->orderByRaw("CASE WHEN status = 'checked_in' THEN 0 ELSE 1 END")
+                ->orderBy('check_in')])
+            ->orderBy('number')
+            ->get();
+        $roomStatusCounts = $rooms->countBy(fn (Room $room): string => $room->occupancyStatus());
 
-        return view('rooms.index', compact('rooms'));
+        return view('rooms.index', compact('rooms', 'roomStatusCounts'));
     }
 
     public function create()

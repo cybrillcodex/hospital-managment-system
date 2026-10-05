@@ -132,6 +132,52 @@ class BookingDailyRentPaymentTest extends TestCase
         ]);
     }
 
+    public function test_checked_out_booking_can_be_edited(): void
+    {
+        $booking = $this->makeOverstayBooking();
+        $booking->update(['status' => 'checked_out']);
+
+        $this->actingAs($this->user)
+            ->get(route('bookings.edit', $booking))
+            ->assertOk();
+
+        $this->actingAs($this->user)
+            ->put(route('bookings.update', $booking), [
+                'room_id' => $booking->room_id,
+                'customer_id' => $booking->customer_id,
+                'guest_name' => 'Updated Guest',
+                'father_name' => '',
+                'phone' => '03001234567',
+                'cnic' => '',
+                'address' => '',
+                'vehicle_number' => '',
+                'males' => 1,
+                'females' => 0,
+                'children' => 0,
+                'check_in' => '2026-09-23',
+                'check_out' => '2026-09-25',
+                'price_per_night' => 600,
+                'notes' => '',
+                'companions' => [],
+            ])
+            ->assertRedirect(route('bookings.show', $booking));
+
+        $this->assertSame('Updated Guest', $booking->fresh()->customer->name);
+        $this->assertSame('checked_out', $booking->fresh()->status);
+    }
+
+    public function test_checked_out_booking_can_be_cancelled(): void
+    {
+        $booking = $this->makeOverstayBooking();
+        $booking->update(['status' => 'checked_out']);
+
+        $this->actingAs($this->user)
+            ->post(route('bookings.cancel', $booking))
+            ->assertRedirect(route('bookings.index'));
+
+        $this->assertSame('cancelled', $booking->fresh()->status);
+    }
+
     private function makeOverstayBooking(bool $withPosItem = false): Booking
     {
         $room = Room::create([

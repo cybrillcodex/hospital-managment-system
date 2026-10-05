@@ -38,8 +38,8 @@ class Room extends Model
                         ->whereNotNull('checked_in_at');
                 })->orWhere(function ($reserved) use ($today) {
                     $reserved->where('status', 'reserved')
-                        ->where('check_in', '<=', $today)
-                        ->where('check_out', '>', $today);
+                        ->whereDate('check_in', '<=', $today)
+                        ->whereDate('check_out', '>', $today);
                 });
             })
             ->orderByRaw("CASE WHEN status = 'checked_in' THEN 0 ELSE 1 END")
@@ -76,8 +76,8 @@ class Room extends Model
                             ->whereNotNull('checked_in_at');
                     })->orWhere(function ($reserved) use ($date) {
                         $reserved->where('status', 'reserved')
-                            ->where('check_in', '<=', $date)
-                            ->where('check_out', '>', $date);
+                            ->whereDate('check_in', '<=', $date)
+                            ->whereDate('check_out', '>', $date);
                     });
                 })
                 ->orderByRaw("CASE WHEN status = 'checked_in' THEN 0 ELSE 1 END")

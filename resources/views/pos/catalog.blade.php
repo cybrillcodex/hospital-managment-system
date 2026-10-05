@@ -4,7 +4,7 @@
 @section('subtitle', 'Quick extras the desk can tap')
 @section('actions')
     <a href="{{ route('pos.index') }}" class="btn btn-ghost">
-        <x-icon name="cart" size="sm" /> Back to POS
+        <x-icon name="cart" size="sm" solid /> Back to POS
     </a>
 @endsection
 
@@ -18,15 +18,15 @@
     <form method="POST" class="card mb-6 grid gap-3 p-5 sm:grid-cols-12" action="{{ route('pos.catalog.store') }}">
         @csrf
         <div class="sm:col-span-6">
-            <label class="field-label"><x-icon name="food" size="sm" /> Item name</label>
+            <label class="field-label"><x-icon name="food" size="sm" solid /> Item name</label>
             <input class="input" name="name" placeholder="Tea, breakfast, laundry…" required>
         </div>
         <div class="sm:col-span-4">
-            <label class="field-label"><x-icon name="money" size="sm" /> Default price</label>
+            <label class="field-label"><x-icon name="money" size="sm" solid /> Default price</label>
             <input class="input" type="number" min="0" step="0.01" name="price" placeholder="0" required>
         </div>
         <div class="flex items-end sm:col-span-2">
-            <button class="btn btn-primary w-full"><x-icon name="plus" size="sm" /> Add</button>
+            <button class="btn btn-primary w-full"><x-icon name="plus" size="sm" solid /> Add</button>
         </div>
     </form>
 
@@ -41,7 +41,7 @@
                     @csrf
                     @method('DELETE')
                     <button class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-crimson hover:bg-rose-50" aria-label="Remove">
-                        <x-icon name="trash" size="sm" />
+                        <x-icon name="trash" size="sm" solid />
                     </button>
                 </form>
             </div>

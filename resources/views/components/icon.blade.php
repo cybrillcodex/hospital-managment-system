@@ -1,4 +1,4 @@
-@props(['name', 'size' => 'md'])
+@props(['name', 'size' => 'md', 'solid' => false])
 
 @php
     $sizes = [
@@ -48,6 +48,9 @@
         'receipt' => '<path d="M7 4.5h10v15l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3zM9.5 8h5M9.5 11.5h5M9.5 15h3"/>',
         'food' => '<path d="M6 4v8a2 2 0 0 0 2 2h0V4M12 4v16M16.5 4c2 2.5 2 6 0 8.5V20"/>',
         'alert' => '<path d="M12 4 3.8 19h16.4zM12 9.5v5M12 16.8h.01"/>',
+        'ban' => '<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>',
+        'x-circle' => '<circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6m0-6-6 6"/>',
+        'moon' => '<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" fill="currentColor" stroke="none"/>',
         'info' => '<circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/>',
         'chevron' => '<path d="m8 10 4 4 4-4"/>',
         'x' => '<path d="M7 7l10 10M17 7 7 17"/>',
@@ -56,17 +59,51 @@
         'settings' => '<circle cx="12" cy="12" r="3"/><path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.4 6.4l1.4 1.4M16.2 16.2l1.4 1.4M17.6 6.4l-1.4 1.4M7.8 16.2l-1.4 1.4"/>',
         'share' => '<circle cx="6.5" cy="12" r="2"/><circle cx="16.5" cy="6.5" r="2"/><circle cx="16.5" cy="17.5" r="2"/><path d="m8.3 11 6.3-3.5M8.3 13l6.3 3.5"/>',
     ];
+
+    $solidPaths = [
+        'arrow-right' => '<path d="M4 10.5h12.2l-4.6-4.6L14 3.5l8.5 8.5L14 20.5l-2.4-2.4 4.6-4.6H4z"/>',
+        'alert' => '<path fill-rule="evenodd" d="M12 2 23 21H1zm-1 7v5h2V9zm0 7v2h2v-2z"/>',
+        'bed' => '<path d="M2 18h20v3H2zM3 16V9a3 3 0 0 1 3-3h5a3 3 0 0 1 3 3v1h4a3 3 0 0 1 3 3v3h-2v-2H5v2zm2-7v3h7V9a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z"/>',
+        'briefcase' => '<path fill-rule="evenodd" d="M3 7h18v14H3zm7-4h4a3 3 0 0 1 3 3h-2a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1H7a3 3 0 0 1 3-3m-7 8h18v2h-7v2h-4v-2H3z"/>',
+        'building' => '<path fill-rule="evenodd" d="m12 2 10 5v15H2V7zM5 9v10h3V9zm5 0v2h2V9zm0 4v2h2v-2zm0 4v2h2v-2zm5-8v10h4V9z"/>',
+        'calendar' => '<path d="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3zm13 8H4v10h16z"/>',
+        'calendar-plus' => '<path d="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3zm13 8H4v10h16z"/><circle cx="12" cy="15" r="4" fill="white"/><path d="M11.25 12.5h1.5v1.75h1.75v1.5h-1.75v1.75h-1.5v-1.75H9.5v-1.5h1.75z"/>',
+        'cart' => '<path d="M2 3h3.7l1.9 11.1A2.5 2.5 0 0 0 10 16h9v-2h-9l-.3-1.5 10.8-1.1L22 6H7.2l-.5-3H2zm7.5 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
+        'check' => '<path d="m2 12 2.8-2.8 4.5 4.5L19.5 3.5l2.8 2.8L9.3 19.2z"/>',
+        'food' => '<path d="M4 2h2v7h1V2h2v7h1V2h2v8a4 4 0 0 1-3 3.9V22H7v-8.1A4 4 0 0 1 4 10zm14 0c-2.8 0-4 3.7-4 6.5 0 2.6 1 4.4 3 5.2V22h3v-8.3c1-.8 2-2.4 2-5.2 0-2.8-1.2-6.5-4-6.5z"/>',
+        'home' => '<path fill-rule="evenodd" d="m12 2 11 9h-3v11h-6v-7h-4v7H4V11H1zm0 2.6L4 11h2v9h2v-7h8v7h2v-9h2z"/>',
+        'info' => '<circle cx="12" cy="12" r="11"/><circle cx="12" cy="7" r="1.5" fill="white"/><path d="M11 10h2v8h-2z" fill="white"/>',
+        'logout' => '<path d="M3 2h10a2 2 0 0 1 2 2v4h-3V5H6v14h6v-3h3v4a2 2 0 0 1-2 2H3zm12 5 2.1-2.1L23 10.7v2.6l-5.9 5.8L15 17l2.8-2.8H8v-3h9.8z"/>',
+        'menu' => '<path d="M4 5h16v3H4zm0 5.5h16v3H4zm0 5.5h16v3H4z"/>',
+        'money' => '<circle cx="12" cy="12" r="10"/><path d="M13 5v1.1c2 .3 3.2 1.4 3.2 3h-2.4c-.2-.8-.9-1.2-2-1.2-1 0-1.7.4-1.7 1 0 .7.8 1 2.3 1.3 2.2.4 4.1 1 4.1 3.2 0 1.8-1.3 3-3.5 3.4V18h-2v-1.2c-2.2-.3-3.6-1.5-3.7-3.3h2.5c.1.9.9 1.4 2.2 1.4 1.1 0 1.8-.4 1.8-1.1 0-.7-.8-1-2.4-1.3-2.1-.4-4-.9-4-3.1 0-1.7 1.3-2.9 3.5-3.3V5z" fill="white" stroke="none"/>',
+        'plus' => '<path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/>',
+        'print' => '<path fill-rule="evenodd" d="M7 2h10v6H7zm-2 8h14a3 3 0 0 1 3 3v5h-4v4H6v-4H2v-5a3 3 0 0 1 3-3zm3 6v4h8v-4zm10-3a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>',
+        'receipt' => '<path fill-rule="evenodd" d="M6 2h12v20l-3-2-3 2-3-2-3 2zm3 5v2h6V7zm0 5v2h6v-2zm0 5v2h4v-2z"/>',
+        'search' => '<path fill-rule="evenodd" d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16M10 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10m5.5 10L22 21.5 19.5 24 13 17.5z"/>',
+        'settings' => '<path fill-rule="evenodd" d="m10 1 4 0 1 3 2 1 3-1 2 4-2 2v4l2 2-2 4-3-1-2 1-1 3h-4l-1-3-2-1-3 1-2-4 2-2v-4L2 8l2-4 3 1 2-1zm2 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8"/>',
+        'spark' => '<path d="m12 1 3 7.5 8 3.5-8 3.5L12 23l-3-7.5L1 12l8-3.5z"/>',
+        'staff' => '<path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6M2 20a7 7 0 0 1 14 0v2H2zm14-4a5.5 5.5 0 0 1 6 5v1h-4v-2a9 9 0 0 0-2-4"/>',
+        'switch' => '<path d="M4 7h15l-3-3 2-2 6 6-6 6-2-2 3-3H4zm16 10H5l3 3-2 2-6-6 6-6 2 2-3 3h15z"/>',
+        'trash' => '<path d="M9 2h6l1 2h5v2H3V4h5zm-4 6h14l-1 13H6zm4 2v8h2v-8zm4 0v8h2v-8z"/>',
+        'trend' => '<path d="M2 19h20v3H2zm2-3 5-6 4 3 7-9v4h3V2h-6v3h3l-6 6-4-3-8 8z"/>',
+        'user' => '<path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10m0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6"/>',
+        'users' => '<path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6M2 20a7 7 0 0 1 14 0v1H2zm14-5a5.5 5.5 0 0 1 6 5v1h-4v-1a8.8 8.8 0 0 0-2-5"/>',
+        'wallet' => '<path fill-rule="evenodd" d="M3 4h18a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m16 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/>',
+        'x' => '<path d="m6 3 6 6 6-6 3 3-6 6 6 6-3 3-6-6-6 6-3-3 6-6-6-6z"/>',
+    ];
+
+    $iconPath = $solid ? ($solidPaths[$name] ?? $paths[$name] ?? $paths['info']) : ($paths[$name] ?? $paths['info']);
 @endphp
 
 <svg {{ $attributes->merge([
-    'class' => ($sizes[$size] ?? $sizes['md']).' shrink-0',
+    'class' => ($sizes[$size] ?? $sizes['md']).' shrink-0'.($solid ? ' icon-solid' : ''),
     'viewBox' => '0 0 24 24',
-    'fill' => 'none',
-    'stroke' => 'currentColor',
+    'fill' => $solid ? 'currentColor' : 'none',
+    'stroke' => $solid ? 'none' : 'currentColor',
     'stroke-width' => '1.8',
     'stroke-linecap' => 'round',
     'stroke-linejoin' => 'round',
     'aria-hidden' => 'true',
 ]) }}>
-    {!! $paths[$name] ?? $paths['info'] !!}
+    {!! $iconPath !!}
 </svg>
